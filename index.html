@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fridge to Table</title>
+</head>
+<body>
+  <h1>Fridge to Table</h1>
+  <input type="file" id="file" accept="image/*" capture="environment">
+  <br><br>
+  <img id="preview" style="max-width:100%; display:none">
+  <br>
+  <button id="go" style="display:none">Find ingredients</button>
+  <p id="result"></p>
+
+  <script>
+    const file = document.getElementById('file');
+    const preview = document.getElementById('preview');
+    const go = document.getElementById('go');
+    const result = document.getElementById('result');
+    let photoData = null;
+
+    // Shrink the photo so it uploads quickly
+    function shrink(photo) {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+          const scale = Math.min(1, 1024 / Math.max(img.width, img.height));
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width * scale;
+          canvas.height = img.height * scale;
+          canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+          resolve(canvas.toDataURL('image/jpeg', 0.8));
+        };
+        img.src = URL.createObjectURL(photo);
+      });
+    }
+
+    file.addEventListener('change', async () => {
+      const photo = file.files[0];
+      if (!photo) return;
+      photoData = await shrink(photo);
+      preview.src = photoData;
+      preview.style.display = 'block';
+      go.style.display = 'inline-block';
+      result.textContent = '';
+    });
+
+    go.addEventListener('click', async () => {
+      result.textContent = 'Looking at your ingredients...';
+      try {
+        const response = await fetch('/api/recipes', {
+          method: 'POST',
+          body: JSON.stringify({ image: photoData.split(',')[1] })
+        });
+        const data = await response.json();
+        result.textContent = data.result;
+      } catch (error) {
+        result.textContent = 'Something went wrong. Please try again.';
+      }
+    });
+  </script>
+</body>
+</html>
