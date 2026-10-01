@@ -15,7 +15,7 @@
   h2 { font:600 1.4rem/1.2 Fraunces,Georgia,serif; margin:24px 0 10px; }
   h3 { font:600 1.25rem/1.2 Fraunces,Georgia,serif; margin:0 0 4px; }
   .lead { color:var(--mute); margin:0 0 20px; }
-  .tip, .status { color:var(--mute); margin:6px 0; }
+  .tip, .status { color:var(--mute); margin:6px 0; font-size:.95rem; }
 
   .picks { display:flex; gap:10px; }
   .picker { flex:1; border:2px dashed var(--accent); border-radius:14px; padding:16px 8px; text-align:center; background:var(--card); cursor:pointer; font-weight:600; }
@@ -33,18 +33,26 @@
   .spotted { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:4px 16px; }
   .del { border:0; background:none; color:var(--warn); font-size:1.5rem; line-height:1; cursor:pointer; padding:4px 8px; }
   .row { display:flex; gap:8px; margin-top:10px; }
-  .row input { flex:1; min-width:0; font:inherit; padding:10px; border:1px solid var(--line); border-radius:10px; background:var(--card); color:var(--ink); }
+  .row input, .num { font:inherit; padding:10px; border:1px solid var(--line); border-radius:10px; background:var(--card); color:var(--ink); }
+  .row input { flex:1; min-width:0; }
+  .num { width:100px; }
   .row button { padding:10px 16px; border:1px solid var(--accent); border-radius:10px; background:var(--card); color:var(--accent); font:600 1rem Inter,sans-serif; cursor:pointer; }
 
-  .diet { display:flex; gap:8px; margin-top:6px; }
-  .diet label { flex:1; position:relative; }
-  .diet input { position:absolute; opacity:0; }
-  .diet span { display:block; text-align:center; padding:10px 6px; border:1px solid var(--accent); border-radius:10px; background:var(--card); cursor:pointer; }
-  .diet input:checked + span { background:var(--accent); color:#fff; }
-  .diet input:focus-visible + span { outline:3px solid var(--accent); outline-offset:2px; }
+  .chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; }
+  .chips label { flex:1 1 22%; position:relative; }
+  .chips input { position:absolute; opacity:0; }
+  .chips span { display:block; text-align:center; padding:10px 6px; border:1px solid var(--accent); border-radius:10px; background:var(--card); cursor:pointer; }
+  .chips small { display:block; font-size:.75rem; opacity:.85; }
+  .chips input:checked + span { background:var(--accent); color:#fff; }
+  .chips input:focus-visible + span { outline:3px solid var(--accent); outline-offset:2px; }
 
   .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:18px; margin-bottom:16px; }
-  .meta { color:var(--mute); font-size:.9rem; margin-bottom:10px; }
+  .kcal { font-size:1rem; color:var(--mute); }
+  .kcal b { font:800 2rem/1.1 Fraunces,Georgia,serif; color:var(--ink); }
+  .bar { display:flex; height:10px; border-radius:99px; overflow:hidden; background:var(--line); margin:8px 0; }
+  .macros { display:flex; flex-wrap:wrap; gap:8px; font-size:.85rem; }
+  .macros span { border-left:6px solid; padding-left:6px; }
+  .meta { color:var(--mute); font-size:.9rem; margin:10px 0; }
   .label { font-weight:600; margin-top:12px; }
   .extra { color:var(--warn); font-size:.9rem; margin:8px 0 0; }
 
@@ -58,7 +66,7 @@
 <body>
 <main>
   <h1>Fridge to Table</h1>
-  <p class="lead">Photograph your ingredients and get dishes you can cook now.</p>
+  <p class="lead">Photograph your ingredients and get dishes that fit your calories.</p>
 
   <div class="picks">
     <label class="picker">
@@ -85,12 +93,25 @@
       <input type="text" id="extra" placeholder="Add an ingredient, e.g. rice, eggs">
       <button id="add">Add</button>
     </div>
+
+    <h2>Calorie goal per serving</h2>
+    <div class="chips" role="radiogroup" aria-label="Calorie goal">
+      <label><input type="radio" name="cal" value="" checked><span>No limit</span></label>
+      <label><input type="radio" name="cal" value="400"><span>Light<small>under 400</small></span></label>
+      <label><input type="radio" name="cal" value="600"><span>Balanced<small>under 600</small></span></label>
+      <label><input type="radio" name="cal" value="800"><span>Hearty<small>under 800</small></span></label>
+    </div>
+
     <h2>Diet</h2>
-    <div class="diet" role="radiogroup" aria-label="Diet">
+    <div class="chips" role="radiogroup" aria-label="Diet">
       <label><input type="radio" name="diet" value="" checked><span>Any</span></label>
       <label><input type="radio" name="diet" value="Vegetarian"><span>Vegetarian</span></label>
       <label><input type="radio" name="diet" value="Non vegetarian"><span>Non veg</span></label>
     </div>
+
+    <h2>Servings</h2>
+    <input class="num" type="number" id="serv" value="2" min="1" max="8" aria-label="Number of servings">
+
     <button class="btn" id="get">Get recipes</button>
   </section>
 
@@ -198,19 +219,39 @@
     check.scrollIntoView({ behavior: 'smooth' });
   }));
 
+  function card(r, max) {
+    const c = Math.round(+r.calories || 0), p = Math.round(+r.protein || 0),
+          cb = Math.round(+r.carbs || 0), f = Math.round(+r.fat || 0);
+    const pk = p * 4, ck = cb * 4, fk = f * 9, t = (pk + ck + fk) || 1;
+    const w = k => Math.round(k / t * 100);
+    return '<div class="card"><h3>' + esc(r.name) + '</h3>' +
+      '<div class="kcal"><b>' + c + '</b> kcal per serving</div>' +
+      (max && c > max ? '<p class="extra">A little over your ' + max + ' kcal goal.</p>' : '') +
+      '<div class="bar" role="img" aria-label="Share of calories from protein, carbs and fat">' +
+        '<i style="width:' + w(pk) + '%;background:#2f6b3a"></i>' +
+        '<i style="width:' + w(ck) + '%;background:#d9a441"></i>' +
+        '<i style="width:' + w(fk) + '%;background:#b4571f"></i></div>' +
+      '<div class="macros"><span style="border-color:#2f6b3a">Protein ' + p + 'g</span>' +
+        '<span style="border-color:#d9a441">Carbs ' + cb + 'g</span>' +
+        '<span style="border-color:#b4571f">Fat ' + f + 'g</span></div>' +
+      '<div class="meta">' + esc(r.time) + ' | Serves ' + esc(r.servings) + '</div>' +
+      '<div class="label">You will use</div>' + numbered(r.needs) +
+      (r.extra && r.extra.length ? '<p class="extra">You may need to buy: ' + esc(r.extra.join(', ')) + '</p>' : '') +
+      '<div class="label">Method</div>' + numbered(r.steps) + '</div>';
+  }
+
   $('get').addEventListener('click', () => {
     addItems();
     if (!items.length) { msg.innerHTML = '<p class="status">Add at least one ingredient first.</p>'; return; }
     const diet = document.querySelector('input[name=diet]:checked').value;
-    work(['Thinking up dishes...', 'Writing the recipes...', 'Almost ready...'], async () => {
-      const d = await api({ mode: 'recipes', ingredients: items, diet });
-      out.innerHTML = '<h2>Recipes for you</h2>' + (d.recipes || []).map(r =>
-        '<div class="card"><h3>' + esc(r.name) + '</h3>' +
-        '<div class="meta">' + esc(r.time) + ' | Serves ' + esc(r.servings) + '</div>' +
-        '<div class="label">You will use</div>' + numbered(r.needs) +
-        (r.extra && r.extra.length ? '<p class="extra">You may need to buy: ' + esc(r.extra.join(', ')) + '</p>' : '') +
-        '<div class="label">Method</div>' + numbered(r.steps) + '</div>'
-      ).join('');
+    const maxCal = document.querySelector('input[name=cal]:checked').value;
+    const servings = Math.min(8, Math.max(1, +$('serv').value || 2));
+    work(['Thinking up dishes...', 'Counting calories...', 'Writing the recipes...', 'Almost ready...'], async () => {
+      const d = await api({ mode: 'recipes', ingredients: items, diet, maxCal, servings });
+      const list = (d.recipes || []).sort((a, b) => (+a.calories || 0) - (+b.calories || 0));
+      out.innerHTML = '<h2>Recipes for you</h2><p class="tip">Lowest calories first. All figures are per serving.</p>' +
+        list.map(r => card(r, +maxCal || 0)).join('') +
+        '<p class="tip">Calories and nutrients are AI estimates and can be well off. This is not medical or dietary advice.</p>';
       out.scrollIntoView({ behavior: 'smooth' });
     });
   });
