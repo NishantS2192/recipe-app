@@ -1,86 +1,193 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Fridge to Table</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fridge to Table</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;800&family=Inter:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --bg: #f3f6ee;
+    --ink: #1f2a1c;
+    --mute: #5d6b58;
+    --card: #ffffff;
+    --accent: #2f6b3a;
+    --line: #d8e0d0;
+    --warn: #b4571f;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.5 Inter, system-ui, sans-serif;
+  }
+  main { max-width: 640px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font: 800 2.2rem/1.1 Fraunces, Georgia, serif; margin: 8px 0 6px; }
+  h2 { font: 600 1.4rem/1.2 Fraunces, Georgia, serif; margin: 24px 0 10px; }
+  h3 { font: 600 1.25rem/1.2 Fraunces, Georgia, serif; margin: 0 0 4px; }
+  .lead { color: var(--mute); margin: 0 0 20px; }
+
+  .picker {
+    display: block;
+    border: 2px dashed var(--accent);
+    border-radius: 14px;
+    padding: 18px;
+    text-align: center;
+    background: var(--card);
+    cursor: pointer;
+    font-weight: 600;
+  }
+  .picker input { display: none; }
+  .picker small { display: block; color: var(--mute); font-weight: 400; }
+
+  #go {
+    display: none;
+    width: 100%;
+    margin-top: 12px;
+    padding: 14px;
+    border: 0;
+    border-radius: 12px;
+    background: var(--accent);
+    color: #fff;
+    font: 600 1.05rem Inter, sans-serif;
+    cursor: pointer;
+  }
+  #go:disabled { opacity: 0.6; cursor: default; }
+
+  #preview {
+    display: none;
+    max-width: 100%;
+    max-height: 200px;
+    margin: 14px auto 0;
+    border-radius: 12px;
+  }
+  #result { margin-top: 8px; }
+  .status { color: var(--mute); margin-top: 14px; }
+
+  ol.numbered { list-style: none; counter-reset: n; padding: 0; margin: 8px 0; }
+  ol.numbered li {
+    counter-increment: n;
+    position: relative;
+    padding: 6px 0 6px 38px;
+  }
+  ol.numbered li::before {
+    content: counter(n);
+    position: absolute;
+    left: 0;
+    top: 6px;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .spotted { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 8px 16px; }
+  .spotted ol { columns: 2; column-gap: 20px; }
+  .spotted li { break-inside: avoid; }
+
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 18px; margin-bottom: 16px; }
+  .meta { color: var(--mute); font-size: 0.9rem; margin-bottom: 10px; }
+  .label { font-weight: 600; margin-top: 12px; }
+  .extra { color: var(--warn); font-size: 0.9rem; margin: 8px 0 0; }
+  :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  @media (max-width: 420px) { .spotted ol { columns: 1; } }
+</style>
 </head>
 <body>
+<main>
   <h1>Fridge to Table</h1>
-  <input type="file" id="file" accept="image/*" capture="environment">
-  <br><br>
-  <img id="preview" style="max-width:100%; display:none">
-  <br>
-  <button id="go" style="display:none">Find ingredients</button>
+  <p class="lead">Photograph your ingredients and get dishes you can cook now.</p>
+
+  <label class="picker">
+    <input type="file" id="file" accept="image/*" capture="environment">
+    Take or choose a photo
+    <small>Fridge, shelf or a table of ingredients</small>
+  </label>
+
+  <button id="go">Find recipes</button>
+  <img id="preview" alt="Your photo">
   <div id="result"></div>
+</main>
 
-  <script>
-    const file = document.getElementById('file');
-    const preview = document.getElementById('preview');
-    const go = document.getElementById('go');
-    const result = document.getElementById('result');
-    let photoData = null;
+<script>
+  const file = document.getElementById('file');
+  const preview = document.getElementById('preview');
+  const go = document.getElementById('go');
+  const result = document.getElementById('result');
+  let photoData = null;
 
-    // Shrink the photo so it uploads quickly
-    function shrink(photo) {
-      return new Promise((resolve) => {
-        const img = new Image();
-        img.onload = () => {
-          const scale = Math.min(1, 1024 / Math.max(img.width, img.height));
-          const canvas = document.createElement('canvas');
-          canvas.width = img.width * scale;
-          canvas.height = img.height * scale;
-          canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-          resolve(canvas.toDataURL('image/jpeg', 0.8));
-        };
-        img.src = URL.createObjectURL(photo);
-      });
-    }
-
-    file.addEventListener('change', async () => {
-      const photo = file.files[0];
-      if (!photo) return;
-      photoData = await shrink(photo);
-      preview.src = photoData;
-      preview.style.display = 'block';
-      go.style.display = 'inline-block';
-      result.textContent = '';
+  function shrink(photo) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, 1024 / Math.max(img.width, img.height));
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width * scale;
+        canvas.height = img.height * scale;
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL('image/jpeg', 0.8));
+      };
+      img.src = URL.createObjectURL(photo);
     });
-
-   go.addEventListener('click', async () => {
-  result.textContent = 'Finding ingredients and recipes...';
-  try {
-    const response = await fetch('/api/recipes', {
-      method: 'POST',
-      body: JSON.stringify({ image: photoData.split(',')[1] })
-    });
-    const data = await response.json();
-
-    let parsed;
-    try {
-      parsed = JSON.parse(data.result);
-    } catch (e) {
-      result.textContent = data.result;
-      return;
-    }
-
-    let html = '<h2>Ingredients spotted</h2><p>' + parsed.ingredients.join(', ') + '</p>';
-    parsed.recipes.forEach(r => {
-      html += '<div style="border:1px solid #ccc; border-radius:8px; padding:12px; margin:12px 0">';
-      html += '<h3>' + r.name + '</h3>';
-      html += '<p>Time: ' + r.time + '. Serves: ' + r.servings + '.</p>';
-      html += '<b>You will use</b><ul>' + r.needs.map(i => '<li>' + i + '</li>').join('') + '</ul>';
-      if (r.extra && r.extra.length) {
-        html += '<p><i>You may need to buy: ' + r.extra.join(', ') + '</i></p>';
-      }
-      html += '<b>Method</b><ol>' + r.steps.map(s => '<li>' + s + '</li>').join('') + '</ol>';
-      html += '</div>';
-    });
-    result.innerHTML = html;
-  } catch (error) {
-    result.textContent = 'Something went wrong. Please try again.';
   }
-});
-  </script>
+
+  const esc = (s) => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const numbered = (items) => '<ol class="numbered">' + items.map(i => '<li>' + esc(i) + '</li>').join('') + '</ol>';
+
+  file.addEventListener('change', async () => {
+    const photo = file.files[0];
+    if (!photo) return;
+    photoData = await shrink(photo);
+    preview.src = photoData;
+    preview.style.display = 'block';
+    go.style.display = 'block';
+    result.innerHTML = '';
+  });
+
+  go.addEventListener('click', async () => {
+    go.disabled = true;
+    result.innerHTML = '<p class="status">Finding ingredients and recipes...</p>';
+    try {
+      const response = await fetch('/api/recipes', {
+        method: 'POST',
+        body: JSON.stringify({ image: photoData.split(',')[1] })
+      });
+      const data = await response.json();
+
+      let parsed;
+      try {
+        parsed = JSON.parse(data.result);
+      } catch (e) {
+        result.innerHTML = '<p class="status">' + esc(data.result) + '</p>';
+        go.disabled = false;
+        return;
+      }
+
+      let html = '<h2>Ingredients spotted</h2><div class="spotted">' + numbered(parsed.ingredients) + '</div>';
+      html += '<h2>Recipes for you</h2>';
+      parsed.recipes.forEach(r => {
+        html += '<div class="card">';
+        html += '<h3>' + esc(r.name) + '</h3>';
+        html += '<div class="meta">' + esc(r.time) + ' | Serves ' + esc(r.servings) + '</div>';
+        html += '<div class="label">You will use</div>' + numbered(r.needs);
+        if (r.extra && r.extra.length) {
+          html += '<p class="extra">You may need to buy: ' + esc(r.extra.join(', ')) + '</p>';
+        }
+        html += '<div class="label">Method</div>' + numbered(r.steps);
+        html += '</div>';
+      });
+      result.innerHTML = html;
+    } catch (error) {
+      result.innerHTML = '<p class="status">Something went wrong. Please try again.</p>';
+    }
+    go.disabled = false;
+  });
+</script>
 </body>
 </html>
