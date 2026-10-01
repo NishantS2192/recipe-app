@@ -6,113 +6,53 @@
 <title>Fridge to Table</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;800&family=Inter:wght@400;500;600&display=swap">
 <style>
-  :root {
-    --bg: #f3f6ee;
-    --ink: #1f2a1c;
-    --mute: #5d6b58;
-    --card: #ffffff;
-    --accent: #2f6b3a;
-    --line: #d8e0d0;
-    --warn: #b4571f;
-  }
+  :root { --bg:#f3f6ee; --ink:#1f2a1c; --mute:#5d6b58; --card:#fff; --accent:#2f6b3a; --line:#d8e0d0; --warn:#b4571f; }
   * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    background: var(--bg);
-    color: var(--ink);
-    font: 16px/1.5 Inter, system-ui, sans-serif;
-  }
-  main { max-width: 640px; margin: 0 auto; padding: 24px 16px 64px; }
-  h1 { font: 800 2.2rem/1.1 Fraunces, Georgia, serif; margin: 8px 0 6px; }
-  h2 { font: 600 1.4rem/1.2 Fraunces, Georgia, serif; margin: 24px 0 10px; }
-  h3 { font: 600 1.25rem/1.2 Fraunces, Georgia, serif; margin: 0 0 4px; }
-  .lead { color: var(--mute); margin: 0 0 20px; }
+  [hidden] { display: none !important; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.5 Inter,system-ui,sans-serif; }
+  main { max-width:640px; margin:0 auto; padding:24px 16px 64px; }
+  h1 { font:800 2.2rem/1.1 Fraunces,Georgia,serif; margin:8px 0 6px; }
+  h2 { font:600 1.4rem/1.2 Fraunces,Georgia,serif; margin:24px 0 10px; }
+  h3 { font:600 1.25rem/1.2 Fraunces,Georgia,serif; margin:0 0 4px; }
+  .lead { color:var(--mute); margin:0 0 20px; }
+  .tip, .status { color:var(--mute); margin:6px 0; }
 
-  .picks { display: flex; gap: 10px; }
-  .picker {
-    flex: 1;
-    display: block;
-    border: 2px dashed var(--accent);
-    border-radius: 14px;
-    padding: 16px 8px;
-    text-align: center;
-    background: var(--card);
-    cursor: pointer;
-    font-weight: 600;
-  }
-  .picker input { display: none; }
-  .picker small { display: block; color: var(--mute); font-weight: 400; }
+  .picks { display:flex; gap:10px; }
+  .picker { flex:1; border:2px dashed var(--accent); border-radius:14px; padding:16px 8px; text-align:center; background:var(--card); cursor:pointer; font-weight:600; }
+  .picker input { display:none; }
+  .picker small { display:block; color:var(--mute); font-weight:400; }
 
-  #go {
-    display: none;
-    width: 100%;
-    margin-top: 12px;
-    padding: 14px;
-    border: 0;
-    border-radius: 12px;
-    background: var(--accent);
-    color: #fff;
-    font: 600 1.05rem Inter, sans-serif;
-    cursor: pointer;
-  }
-  #go:disabled { opacity: 0.6; cursor: default; }
+  .btn { display:block; width:100%; margin-top:12px; padding:14px; border:0; border-radius:12px; background:var(--accent); color:#fff; font:600 1.05rem Inter,sans-serif; cursor:pointer; }
+  .btn:disabled { opacity:.6; cursor:default; }
+  .btn.alt { background:var(--card); color:var(--accent); border:1px solid var(--accent); }
+  #preview { display:none; max-width:100%; max-height:200px; margin:14px auto 0; border-radius:12px; }
 
-  #preview {
-    display: none;
-    max-width: 100%;
-    max-height: 200px;
-    margin: 14px auto 0;
-    border-radius: 12px;
-  }
-  #result { margin-top: 8px; }
-  .status { color: var(--mute); margin-top: 14px; }
+  ol.numbered { list-style:none; counter-reset:n; padding:0; margin:8px 0; }
+  ol.numbered li { counter-increment:n; position:relative; padding:6px 0 6px 38px; display:flex; justify-content:space-between; align-items:center; gap:8px; }
+  ol.numbered li::before { content:counter(n); position:absolute; left:0; top:6px; width:26px; height:26px; border-radius:50%; background:var(--accent); color:#fff; font-size:.85rem; font-weight:600; display:flex; align-items:center; justify-content:center; }
+  .spotted { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:4px 16px; }
+  .del { border:0; background:none; color:var(--warn); font-size:1.5rem; line-height:1; cursor:pointer; padding:4px 8px; }
+  .row { display:flex; gap:8px; margin-top:10px; }
+  .row input { flex:1; min-width:0; font:inherit; padding:10px; border:1px solid var(--line); border-radius:10px; background:var(--card); color:var(--ink); }
+  .row button { padding:10px 16px; border:1px solid var(--accent); border-radius:10px; background:var(--card); color:var(--accent); font:600 1rem Inter,sans-serif; cursor:pointer; }
 
-  ol.numbered { list-style: none; counter-reset: n; padding: 0; margin: 8px 0; }
-  ol.numbered li {
-    counter-increment: n;
-    position: relative;
-    padding: 6px 0 6px 38px;
-  }
-  ol.numbered li::before {
-    content: counter(n);
-    position: absolute;
-    left: 0;
-    top: 6px;
-    width: 26px;
-    height: 26px;
-    border-radius: 50%;
-    background: var(--accent);
-    color: #fff;
-    font-size: 0.85rem;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .spotted { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 8px 16px; }
-  .spotted ol { columns: 2; column-gap: 20px; }
-  .spotted li { break-inside: avoid; }
+  .diet { display:flex; gap:8px; margin-top:6px; }
+  .diet label { flex:1; position:relative; }
+  .diet input { position:absolute; opacity:0; }
+  .diet span { display:block; text-align:center; padding:10px 6px; border:1px solid var(--accent); border-radius:10px; background:var(--card); cursor:pointer; }
+  .diet input:checked + span { background:var(--accent); color:#fff; }
+  .diet input:focus-visible + span { outline:3px solid var(--accent); outline-offset:2px; }
 
-  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 18px; margin-bottom: 16px; }
-  .meta { color: var(--mute); font-size: 0.9rem; margin-bottom: 10px; }
-  .label { font-weight: 600; margin-top: 12px; }
-  .extra { color: var(--warn); font-size: 0.9rem; margin: 8px 0 0; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:18px; margin-bottom:16px; }
+  .meta { color:var(--mute); font-size:.9rem; margin-bottom:10px; }
+  .label { font-weight:600; margin-top:12px; }
+  .extra { color:var(--warn); font-size:.9rem; margin:8px 0 0; }
 
-  .loader { text-align: center; padding: 28px 0; }
-  .spinner {
-    width: 36px;
-    height: 36px;
-    margin: 0 auto 12px;
-    border: 4px solid var(--line);
-    border-top-color: var(--accent);
-    border-radius: 50%;
-    animation: spin 0.9s linear infinite;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  @media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 3s; } }
-
-  :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
-  @media (max-width: 420px) { .spotted ol { columns: 1; } }
+  .loader { text-align:center; padding:28px 0; }
+  .spinner { width:36px; height:36px; margin:0 auto 12px; border:4px solid var(--line); border-top-color:var(--accent); border-radius:50%; animation:spin .9s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .spinner { animation-duration:3s; } }
+  :focus-visible { outline:3px solid var(--accent); outline-offset:2px; }
 </style>
 </head>
 <body>
@@ -133,97 +73,146 @@
     </label>
   </div>
 
-  <button id="go">Find recipes</button>
+  <button class="btn" id="go" hidden>Find ingredients</button>
   <img id="preview" alt="Your photo">
-  <div id="result"></div>
+  <div id="msg"></div>
+
+  <section id="check" hidden>
+    <h2>Check your ingredients</h2>
+    <p class="tip">Remove anything wrong and add anything missing.</p>
+    <div class="spotted"><ol class="numbered" id="list"></ol></div>
+    <div class="row">
+      <input type="text" id="extra" placeholder="Add an ingredient, e.g. rice, eggs">
+      <button id="add">Add</button>
+    </div>
+    <h2>Diet</h2>
+    <div class="diet" role="radiogroup" aria-label="Diet">
+      <label><input type="radio" name="diet" value="" checked><span>Any</span></label>
+      <label><input type="radio" name="diet" value="Vegetarian"><span>Vegetarian</span></label>
+      <label><input type="radio" name="diet" value="Non vegetarian"><span>Non veg</span></label>
+    </div>
+    <button class="btn" id="get">Get recipes</button>
+  </section>
+
+  <div id="out"></div>
 </main>
 
 <script>
-  const camera = document.getElementById('camera');
-  const upload = document.getElementById('upload');
-  const preview = document.getElementById('preview');
-  const go = document.getElementById('go');
-  const result = document.getElementById('result');
-  let photoData = null;
+  const $ = id => document.getElementById(id);
+  const preview = $('preview'), go = $('go'), msg = $('msg'), check = $('check'), out = $('out');
+  let photoData = null, items = [], lastTry = null;
 
   function shrink(photo) {
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
       const img = new Image();
       img.onload = () => {
-        const scale = Math.min(1, 1024 / Math.max(img.width, img.height));
-        const canvas = document.createElement('canvas');
-        canvas.width = img.width * scale;
-        canvas.height = img.height * scale;
-        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL('image/jpeg', 0.8));
+        const s = Math.min(1, 1024 / Math.max(img.width, img.height));
+        const c = document.createElement('canvas');
+        c.width = img.width * s; c.height = img.height * s;
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        resolve(c.toDataURL('image/jpeg', 0.8));
       };
       img.src = URL.createObjectURL(photo);
     });
   }
 
-  const esc = (s) => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-  const numbered = (items) => '<ol class="numbered">' + items.map(i => '<li>' + esc(i) + '</li>').join('') + '</ol>';
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const numbered = a => '<ol class="numbered">' + (a || []).map(i => '<li><span>' + esc(i) + '</span></li>').join('') + '</ol>';
 
   async function handlePhoto(input) {
-    const photo = input.files[0];
-    if (!photo) return;
-    photoData = await shrink(photo);
+    const f = input.files[0];
+    input.value = '';
+    if (!f) return;
+    photoData = await shrink(f);
     preview.src = photoData;
     preview.style.display = 'block';
-    go.style.display = 'block';
-    result.innerHTML = '';
-    input.value = '';
+    go.hidden = false;
+    check.hidden = true;
+    out.innerHTML = '';
+    msg.innerHTML = '';
   }
-  camera.addEventListener('change', () => handlePhoto(camera));
-  upload.addEventListener('change', () => handlePhoto(upload));
+  $('camera').addEventListener('change', () => handlePhoto($('camera')));
+  $('upload').addEventListener('change', () => handlePhoto($('upload')));
 
-  go.addEventListener('click', async () => {
-    go.disabled = true;
+  function drawList() {
+    $('list').innerHTML = items.map((n, i) =>
+      '<li><span>' + esc(n) + '</span><button class="del" data-i="' + i + '" aria-label="Remove ' + esc(n) + '">&times;</button></li>'
+    ).join('');
+  }
+  $('list').addEventListener('click', e => {
+    const b = e.target.closest('.del');
+    if (!b) return;
+    items.splice(+b.dataset.i, 1);
+    drawList();
+  });
+  function addItems() {
+    $('extra').value.split(',').map(s => s.trim()).filter(Boolean).forEach(n => {
+      if (!items.some(x => x.toLowerCase() === n.toLowerCase())) items.push(n);
+    });
+    $('extra').value = '';
+    drawList();
+  }
+  $('add').addEventListener('click', addItems);
+  $('extra').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addItems(); } });
 
-    const steps = ['Spotting ingredients...', 'Thinking up dishes...', 'Writing the recipes...', 'Almost ready...'];
+  async function api(body) {
+    const res = await fetch('/api/recipes', { method: 'POST', body: JSON.stringify(body) });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    return JSON.parse(data.result);
+  }
+
+  async function work(labels, fn) {
     let n = 0;
-    result.innerHTML = '<div class="loader"><div class="spinner"></div><p class="status" id="step">' + steps[0] + '</p></div>';
-    const timer = setInterval(() => {
-      n = Math.min(n + 1, steps.length - 1);
-      document.getElementById('step').textContent = steps[n];
+    msg.innerHTML = '<div class="loader"><div class="spinner"></div><p class="status" id="step">' + labels[0] + '</p></div>';
+    const t = setInterval(() => {
+      n = Math.min(n + 1, labels.length - 1);
+      const s = $('step'); if (s) s.textContent = labels[n];
     }, 4000);
-
+    go.disabled = true; $('get').disabled = true;
     try {
-      const response = await fetch('/api/recipes', {
-        method: 'POST',
-        body: JSON.stringify({ image: photoData.split(',')[1] })
-      });
-      const data = await response.json();
-      clearInterval(timer);
-
-      let parsed;
-      try {
-        parsed = JSON.parse(data.result);
-      } catch (e) {
-        result.innerHTML = '<p class="status">' + esc(data.result) + '</p>';
-        go.disabled = false;
-        return;
-      }
-
-      let html = '<h2>Ingredients spotted</h2><div class="spotted">' + numbered(parsed.ingredients) + '</div>';
-      html += '<h2>Recipes for you</h2>';
-      parsed.recipes.forEach(r => {
-        html += '<div class="card">';
-        html += '<h3>' + esc(r.name) + '</h3>';
-        html += '<div class="meta">' + esc(r.time) + ' | Serves ' + esc(r.servings) + '</div>';
-        html += '<div class="label">You will use</div>' + numbered(r.needs);
-        if (r.extra && r.extra.length) {
-          html += '<p class="extra">You may need to buy: ' + esc(r.extra.join(', ')) + '</p>';
-        }
-        html += '<div class="label">Method</div>' + numbered(r.steps);
-        html += '</div>';
-      });
-      result.innerHTML = html;
-    } catch (error) {
-      clearInterval(timer);
-      result.innerHTML = '<p class="status">Something went wrong. Please try again.</p>';
+      await fn();
+      msg.innerHTML = '';
+    } catch (e) {
+      const text = {
+        busy: 'The AI service is busy right now. Wait a minute and try again.',
+        none: 'No food found in that photo. Try a clearer one.'
+      }[e.message] || 'Something went wrong. Please try again.';
+      msg.innerHTML = '<p class="status">' + text + '</p>' +
+        (e.message === 'none' ? '' : '<button class="btn alt" id="retry">Try again</button>');
+      lastTry = () => work(labels, fn);
+    } finally {
+      clearInterval(t);
+      go.disabled = false; $('get').disabled = false;
     }
-    go.disabled = false;
+  }
+  msg.addEventListener('click', e => { if (e.target.id === 'retry' && lastTry) lastTry(); });
+
+  go.addEventListener('click', () => work(['Spotting ingredients...', 'Reading the photo...', 'Almost ready...'], async () => {
+    const d = await api({ mode: 'detect', image: photoData.split(',')[1] });
+    items = d.ingredients || [];
+    if (!items.length) throw new Error('none');
+    out.innerHTML = '';
+    drawList();
+    check.hidden = false;
+    check.scrollIntoView({ behavior: 'smooth' });
+  }));
+
+  $('get').addEventListener('click', () => {
+    addItems();
+    if (!items.length) { msg.innerHTML = '<p class="status">Add at least one ingredient first.</p>'; return; }
+    const diet = document.querySelector('input[name=diet]:checked').value;
+    work(['Thinking up dishes...', 'Writing the recipes...', 'Almost ready...'], async () => {
+      const d = await api({ mode: 'recipes', ingredients: items, diet });
+      out.innerHTML = '<h2>Recipes for you</h2>' + (d.recipes || []).map(r =>
+        '<div class="card"><h3>' + esc(r.name) + '</h3>' +
+        '<div class="meta">' + esc(r.time) + ' | Serves ' + esc(r.servings) + '</div>' +
+        '<div class="label">You will use</div>' + numbered(r.needs) +
+        (r.extra && r.extra.length ? '<p class="extra">You may need to buy: ' + esc(r.extra.join(', ')) + '</p>' : '') +
+        '<div class="label">Method</div>' + numbered(r.steps) + '</div>'
+      ).join('');
+      out.scrollIntoView({ behavior: 'smooth' });
+    });
   });
 </script>
 </body>
