@@ -28,11 +28,13 @@
   h3 { font: 600 1.25rem/1.2 Fraunces, Georgia, serif; margin: 0 0 4px; }
   .lead { color: var(--mute); margin: 0 0 20px; }
 
+  .picks { display: flex; gap: 10px; }
   .picker {
+    flex: 1;
     display: block;
     border: 2px dashed var(--accent);
     border-radius: 14px;
-    padding: 18px;
+    padding: 16px 8px;
     text-align: center;
     background: var(--card);
     cursor: pointer;
@@ -95,8 +97,6 @@
   .meta { color: var(--mute); font-size: 0.9rem; margin-bottom: 10px; }
   .label { font-weight: 600; margin-top: 12px; }
   .extra { color: var(--warn); font-size: 0.9rem; margin: 8px 0 0; }
-  .picks { display: flex; gap: 10px; }
-  .picks .picker { flex: 1; padding: 16px 8px; }
   :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
   @media (max-width: 420px) { .spotted ol { columns: 1; } }
 </style>
@@ -125,7 +125,8 @@
 </main>
 
 <script>
-  const file = document.getElementById('file');
+  const camera = document.getElementById('camera');
+  const upload = document.getElementById('upload');
   const preview = document.getElementById('preview');
   const go = document.getElementById('go');
   const result = document.getElementById('result');
@@ -149,15 +150,18 @@
   const esc = (s) => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   const numbered = (items) => '<ol class="numbered">' + items.map(i => '<li>' + esc(i) + '</li>').join('') + '</ol>';
 
-  file.addEventListener('change', async () => {
-    const photo = file.files[0];
+  async function handlePhoto(input) {
+    const photo = input.files[0];
     if (!photo) return;
     photoData = await shrink(photo);
     preview.src = photoData;
     preview.style.display = 'block';
     go.style.display = 'block';
     result.innerHTML = '';
-  });
+    input.value = '';
+  }
+  camera.addEventListener('change', () => handlePhoto(camera));
+  upload.addEventListener('change', () => handlePhoto(upload));
 
   go.addEventListener('click', async () => {
     go.disabled = true;
