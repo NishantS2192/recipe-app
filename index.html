@@ -97,6 +97,20 @@
   .meta { color: var(--mute); font-size: 0.9rem; margin-bottom: 10px; }
   .label { font-weight: 600; margin-top: 12px; }
   .extra { color: var(--warn); font-size: 0.9rem; margin: 8px 0 0; }
+
+  .loader { text-align: center; padding: 28px 0; }
+  .spinner {
+    width: 36px;
+    height: 36px;
+    margin: 0 auto 12px;
+    border: 4px solid var(--line);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 3s; } }
+
   :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
   @media (max-width: 420px) { .spotted ol { columns: 1; } }
 </style>
@@ -165,13 +179,22 @@
 
   go.addEventListener('click', async () => {
     go.disabled = true;
-    result.innerHTML = '<p class="status">Finding ingredients and recipes...</p>';
+
+    const steps = ['Spotting ingredients...', 'Thinking up dishes...', 'Writing the recipes...', 'Almost ready...'];
+    let n = 0;
+    result.innerHTML = '<div class="loader"><div class="spinner"></div><p class="status" id="step">' + steps[0] + '</p></div>';
+    const timer = setInterval(() => {
+      n = Math.min(n + 1, steps.length - 1);
+      document.getElementById('step').textContent = steps[n];
+    }, 4000);
+
     try {
       const response = await fetch('/api/recipes', {
         method: 'POST',
         body: JSON.stringify({ image: photoData.split(',')[1] })
       });
       const data = await response.json();
+      clearInterval(timer);
 
       let parsed;
       try {
@@ -197,6 +220,7 @@
       });
       result.innerHTML = html;
     } catch (error) {
+      clearInterval(timer);
       result.innerHTML = '<p class="status">Something went wrong. Please try again.</p>';
     }
     go.disabled = false;
