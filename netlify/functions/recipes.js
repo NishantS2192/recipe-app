@@ -15,10 +15,16 @@ exports.handler = async (event) => {
         : b.diet === "Non vegetarian"
         ? "All dishes must be non vegetarian, using meat, fish or eggs. If the list has none, put one in the extra items to buy."
         : "Dishes can be vegetarian or non vegetarian.";
+      const cal = b.maxCal
+        ? `Each dish must have at most ${b.maxCal} kcal per serving.`
+        : "Prefer lighter, balanced dishes.";
+      const servings = Math.min(8, Math.max(1, parseInt(b.servings) || 2));
       parts = [{ text: `Suggest 3 different dishes made mainly from these ingredients: ${b.ingredients.join(", ")}.
-Basic pantry items like oil, salt and spices can be assumed. ${diet}
+Basic pantry items like oil, salt and spices can be assumed. ${diet} ${cal}
+Each dish serves ${servings}. Scale the quantities to ${servings} servings.
+Estimate nutrition per single serving, as whole numbers: calories in kcal, and protein, carbs and fat in grams. Count cooking oil and sauces.
 Reply with JSON only, in exactly this shape:
-{"recipes":[{"name":"","time":"25 min","servings":2,"needs":["quantity and item"],"extra":["items not in the list"],"steps":["..."]}]}` }];
+{"recipes":[{"name":"","time":"25 min","servings":${servings},"calories":450,"protein":20,"carbs":50,"fat":15,"needs":["quantity and item"],"extra":["items not in the list"],"steps":["..."]}]}` }];
     }
 
     const response = await fetch(url, {
