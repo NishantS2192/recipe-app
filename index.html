@@ -12,7 +12,7 @@
   <img id="preview" style="max-width:100%; display:none">
   <br>
   <button id="go" style="display:none">Find ingredients</button>
-  <p id="result"></p>
+  <div id="result"></div>
 
   <script>
     const file = document.getElementById('file');
@@ -47,19 +47,40 @@
       result.textContent = '';
     });
 
-    go.addEventListener('click', async () => {
-      result.textContent = 'Looking at your ingredients...';
-      try {
-        const response = await fetch('/api/recipes', {
-          method: 'POST',
-          body: JSON.stringify({ image: photoData.split(',')[1] })
-        });
-        const data = await response.json();
-        result.textContent = data.result;
-      } catch (error) {
-        result.textContent = 'Something went wrong. Please try again.';
-      }
+   go.addEventListener('click', async () => {
+  result.textContent = 'Finding ingredients and recipes...';
+  try {
+    const response = await fetch('/api/recipes', {
+      method: 'POST',
+      body: JSON.stringify({ image: photoData.split(',')[1] })
     });
+    const data = await response.json();
+
+    let parsed;
+    try {
+      parsed = JSON.parse(data.result);
+    } catch (e) {
+      result.textContent = data.result;
+      return;
+    }
+
+    let html = '<h2>Ingredients spotted</h2><p>' + parsed.ingredients.join(', ') + '</p>';
+    parsed.recipes.forEach(r => {
+      html += '<div style="border:1px solid #ccc; border-radius:8px; padding:12px; margin:12px 0">';
+      html += '<h3>' + r.name + '</h3>';
+      html += '<p>Time: ' + r.time + '. Serves: ' + r.servings + '.</p>';
+      html += '<b>You will use</b><ul>' + r.needs.map(i => '<li>' + i + '</li>').join('') + '</ul>';
+      if (r.extra && r.extra.length) {
+        html += '<p><i>You may need to buy: ' + r.extra.join(', ') + '</i></p>';
+      }
+      html += '<b>Method</b><ol>' + r.steps.map(s => '<li>' + s + '</li>').join('') + '</ol>';
+      html += '</div>';
+    });
+    result.innerHTML = html;
+  } catch (error) {
+    result.textContent = 'Something went wrong. Please try again.';
+  }
+});
   </script>
 </body>
 </html>
