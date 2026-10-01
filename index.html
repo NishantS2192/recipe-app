@@ -95,6 +95,8 @@
   .meta { color: var(--mute); font-size: 0.9rem; margin-bottom: 10px; }
   .label { font-weight: 600; margin-top: 12px; }
   .extra { color: var(--warn); font-size: 0.9rem; margin: 8px 0 0; }
+  .picks { display: flex; gap: 10px; }
+  .picks .picker { flex: 1; padding: 16px 8px; }
   :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
   @media (max-width: 420px) { .spotted ol { columns: 1; } }
 </style>
@@ -104,11 +106,18 @@
   <h1>Fridge to Table</h1>
   <p class="lead">Photograph your ingredients and get dishes you can cook now.</p>
 
-  <label class="picker">
-    <input type="file" id="file" accept="image/*" capture="environment">
-    Take or choose a photo
-    <small>Fridge, shelf or a table of ingredients</small>
-  </label>
+  <div class="picks">
+    <label class="picker">
+      <input type="file" id="camera" accept="image/*" capture="environment">
+      Take a photo
+      <small>Opens your camera</small>
+    </label>
+    <label class="picker">
+      <input type="file" id="upload" accept="image/*">
+      Upload image
+      <small>From your gallery or files</small>
+    </label>
+  </div>
 
   <button id="go">Find recipes</button>
   <img id="preview" alt="Your photo">
