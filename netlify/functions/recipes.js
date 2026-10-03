@@ -1,7 +1,8 @@
 exports.handler = async (event) => {
   try {
     const b = JSON.parse(event.body);
-    const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=" + process.env.GEMINI_API_KEY;
+    const MODEL = "gemini-3.1-flash-lite";
+const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
     let parts;
 
     if (b.mode === "detect") {
@@ -27,9 +28,12 @@ Reply with JSON only, in exactly this shape:
 {"recipes":[{"name":"","time":"25 min","servings":${servings},"calories":450,"protein":20,"carbs":50,"fat":15,"needs":["quantity and item"],"extra":["items not in the list"],"steps":["..."]}]}` }];
     }
 
-    const response = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+   const response = await fetch(url, {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    "x-goog-api-key": (process.env.GEMINI_API_KEY || "").trim()
+  },
       body: JSON.stringify({
         contents: [{ parts }],
         generationConfig: { responseMimeType: "application/json" }
