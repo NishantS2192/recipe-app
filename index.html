@@ -16,6 +16,10 @@
   h3 { font:600 1.25rem/1.2 Fraunces,Georgia,serif; margin:0 0 4px; }
   .lead { color:var(--mute); margin:0 0 20px; }
   .tip, .status { color:var(--mute); margin:6px 0; font-size:.95rem; }
+  .count { font-weight:600; margin:10px 0 4px; }
+  .count.stale { color:var(--warn); }
+  .freshbox { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px 16px; margin:8px 0 14px; }
+  .freshbox .items { padding:0; }
 
   .picks { display:flex; gap:10px; }
   .picker { flex:1; border:2px dashed var(--accent); border-radius:14px; padding:16px 8px; text-align:center; background:var(--card); cursor:pointer; font-weight:600; }
@@ -33,8 +37,9 @@
   .spotted { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:4px 16px; }
   .del { border:0; background:none; color:var(--warn); font-size:1.5rem; line-height:1; cursor:pointer; padding:4px 8px; }
   .row { display:flex; gap:8px; margin-top:10px; }
-  .row input, .num { font:inherit; padding:10px; border:1px solid var(--line); border-radius:10px; background:var(--card); color:var(--ink); }
+  .row input, .row select, .num { font:inherit; padding:10px; border:1px solid var(--line); border-radius:10px; background:var(--card); color:var(--ink); }
   .row input { flex:1; min-width:0; }
+  .row select { max-width:150px; }
   .num { width:100px; }
   .row button { padding:10px 16px; border:1px solid var(--accent); border-radius:10px; background:var(--card); color:var(--accent); font:600 1rem Inter,sans-serif; cursor:pointer; }
 
@@ -45,6 +50,24 @@
   .chips small { display:block; font-size:.75rem; opacity:.85; }
   .chips input:checked + span { background:var(--accent); color:#fff; }
   .chips input:focus-visible + span { outline:3px solid var(--accent); outline-offset:2px; }
+
+  /* My kitchen */
+  .toolbar { display:flex; flex-wrap:wrap; gap:8px; margin:8px 0 4px; }
+  .mini { padding:8px 12px; border:1px solid var(--accent); border-radius:10px; background:var(--card); color:var(--accent); font:600 .9rem Inter,sans-serif; cursor:pointer; }
+  .mini.on { background:var(--warn); border-color:var(--warn); color:#fff; }
+  details.cat { background:var(--card); border:1px solid var(--line); border-radius:14px; margin:10px 0; }
+  details.cat > summary { cursor:pointer; padding:12px 16px; font-weight:600; list-style:none; display:flex; justify-content:space-between; align-items:center; gap:8px; }
+  details.cat > summary::-webkit-details-marker { display:none; }
+  details.cat > summary .n { color:var(--mute); font-weight:400; font-size:.9rem; }
+  details.cat .inner { padding:0 16px 16px; }
+  .items { display:flex; flex-wrap:wrap; gap:8px; padding:0 16px 14px; }
+  .item { border:1px solid var(--accent); background:var(--accent); color:#fff; border-radius:99px; padding:7px 14px; font:500 .95rem Inter,sans-serif; cursor:pointer; }
+  .item.on::before { content:'\2713  '; }
+  .item.off { background:var(--card); color:var(--mute); border-color:var(--line); text-decoration:line-through; }
+  .editing .item, .editing .item.off { background:var(--card); color:var(--warn); border-color:var(--warn); text-decoration:none; }
+  .editing .item::before { content:none; }
+  .editing .item::after { content:'  \00d7'; }
+  .item:focus-visible, .mini:focus-visible { outline:3px solid var(--accent); outline-offset:2px; }
 
   .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:18px; margin-bottom:16px; }
   .kcal { font-size:1rem; color:var(--mute); }
@@ -66,8 +89,14 @@
 <body>
 <main>
   <h1>Fridge to Table</h1>
-  <p class="lead">Photograph your ingredients and get dishes that fit your calories.</p>
+  <p class="lead">Photograph your fresh items when you shop. Each day, tap what is finished and ask what to cook.</p>
 
+  <h2>Fresh items</h2>
+  <p class="tip">Photograph your vegetables and other fresh food when you shop. This list stays saved until you take another photo, so on days you have not shopped there is nothing to do. Tap an item once it is finished.</p>
+  <p class="count" id="freshStatus"></p>
+  <div class="freshbox"><div class="items" id="freshItems"></div></div>
+
+  <p class="tip">Bought something new? Take a photo or upload one.</p>
   <div class="picks">
     <label class="picker">
       <input type="file" id="camera" accept="image/*" capture="environment">
@@ -80,146 +109,385 @@
       <small>From your gallery or files</small>
     </label>
   </div>
-
-  <button class="btn" id="go" hidden>Find ingredients</button>
+  <button class="btn" id="go" type="button" hidden>Find ingredients</button>
   <img id="preview" alt="Your photo">
+  <div id="photoMsg"></div>
+  <div id="foundBox" hidden>
+    <p class="tip">Remove anything wrong. Replace your fresh list after a full shop, or add to it for a mid-week top-up.</p>
+    <div class="spotted"><ol class="numbered" id="foundList"></ol></div>
+    <button class="btn" id="replaceFound" type="button">Replace my fresh list</button>
+    <button class="btn alt" id="addFound" type="button">Add to my fresh list</button>
+  </div>
+  <div class="toolbar"><button type="button" class="mini" id="clearFresh">Clear fresh list</button></div>
+
+  <h2>Pantry and staples</h2>
+  <p class="tip">Tap an item to mark it finished. Tap it again when it is back in stock.</p>
+  <p class="count" id="count"></p>
+  <div class="toolbar">
+    <button type="button" class="mini" id="restock">Everything is back</button>
+    <button type="button" class="mini" id="edit">Edit list</button>
+    <button type="button" class="mini" id="reset">Reset to starter list</button>
+  </div>
+  <p class="tip" id="editTip" hidden>Edit mode: tap an item to delete it from your list.</p>
+  <div id="kitchen"></div>
+
+  <div class="row">
+    <input type="text" id="extra" placeholder="Add items, e.g. cauliflower, chicken" aria-label="Add items">
+    <select id="addcat" aria-label="Category"></select>
+    <button type="button" id="add">Add</button>
+  </div>
+
+  <h2>Meal</h2>
+  <div class="chips" role="radiogroup" aria-label="Meal">
+    <label><input type="radio" name="meal" value="" checked><span>Any</span></label>
+    <label><input type="radio" name="meal" value="Breakfast"><span>Breakfast</span></label>
+    <label><input type="radio" name="meal" value="Lunch"><span>Lunch</span></label>
+    <label><input type="radio" name="meal" value="Dinner"><span>Dinner</span></label>
+    <label><input type="radio" name="meal" value="Snack"><span>Snack</span></label>
+  </div>
+
+  <h2>Calorie goal per serving</h2>
+  <div class="chips" role="radiogroup" aria-label="Calorie goal">
+    <label><input type="radio" name="cal" value="" checked><span>No limit</span></label>
+    <label><input type="radio" name="cal" value="400"><span>Light<small>under 400</small></span></label>
+    <label><input type="radio" name="cal" value="600"><span>Balanced<small>under 600</small></span></label>
+    <label><input type="radio" name="cal" value="800"><span>Hearty<small>under 800</small></span></label>
+  </div>
+
+  <h2>Diet</h2>
+  <div class="chips" role="radiogroup" aria-label="Diet">
+    <label><input type="radio" name="diet" value="" checked><span>Any</span></label>
+    <label><input type="radio" name="diet" value="Vegetarian"><span>Vegetarian</span></label>
+    <label><input type="radio" name="diet" value="Non vegetarian"><span>Non veg</span></label>
+  </div>
+
+  <h2>Cuisine</h2>
+  <div class="chips" role="radiogroup" aria-label="Cuisine">
+    <label><input type="radio" name="cuisine" value="Indian" checked><span>Indian home style</span></label>
+    <label><input type="radio" name="cuisine" value="Any"><span>Any cuisine</span></label>
+  </div>
+
+  <h2>Servings</h2>
+  <input class="num" type="number" id="serv" value="2" min="1" max="8" aria-label="Number of servings">
+
+  <p class="count" id="count2"></p>
+  <button class="btn" id="get" type="button">Get recipes</button>
   <div id="msg"></div>
-
-  <section id="check" hidden>
-    <h2>Check your ingredients</h2>
-    <p class="tip">Remove anything wrong and add anything missing.</p>
-    <div class="spotted"><ol class="numbered" id="list"></ol></div>
-    <div class="row">
-      <input type="text" id="extra" placeholder="Add an ingredient, e.g. rice, eggs">
-      <button id="add">Add</button>
-    </div>
-
-    <h2>Calorie goal per serving</h2>
-    <div class="chips" role="radiogroup" aria-label="Calorie goal">
-      <label><input type="radio" name="cal" value="" checked><span>No limit</span></label>
-      <label><input type="radio" name="cal" value="400"><span>Light<small>under 400</small></span></label>
-      <label><input type="radio" name="cal" value="600"><span>Balanced<small>under 600</small></span></label>
-      <label><input type="radio" name="cal" value="800"><span>Hearty<small>under 800</small></span></label>
-    </div>
-
-    <h2>Diet</h2>
-    <div class="chips" role="radiogroup" aria-label="Diet">
-      <label><input type="radio" name="diet" value="" checked><span>Any</span></label>
-      <label><input type="radio" name="diet" value="Vegetarian"><span>Vegetarian</span></label>
-      <label><input type="radio" name="diet" value="Non vegetarian"><span>Non veg</span></label>
-    </div>
-
-    <h2>Servings</h2>
-    <input class="num" type="number" id="serv" value="2" min="1" max="8" aria-label="Number of servings">
-
-    <button class="btn" id="get">Get recipes</button>
-  </section>
-
   <div id="out"></div>
 </main>
 
 <script>
   const $ = id => document.getElementById(id);
-  const preview = $('preview'), go = $('go'), msg = $('msg'), check = $('check'), out = $('out');
-  let photoData = null, items = [], lastTry = null;
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const numbered = a => '<ol class="numbered">' + (a || []).map(i => '<li><span>' + esc(i) + '</span></li>').join('') + '</ol>';
+
+  /* ---------- Kitchen data ---------- */
+  const CATS = [
+    { id: 'fresh',  name: 'Fresh items' },
+    { id: 'dairy',  name: 'Dairy & eggs', open: true },
+    { id: 'grains', name: 'Grains, flours & breakfast' },
+    { id: 'dals',   name: 'Dals & pulses' },
+    { id: 'other',  name: 'Other staples' },
+    { id: 'base',   name: 'Spices & cooking basics', base: true }
+  ];
+  const STARTER = {
+    fresh:  [],
+    dairy:  ['Milk', 'Curd', 'Paneer', 'Butter', 'Eggs'],
+    grains: ['Rice', 'Wheat flour (atta)', 'Besan (gram flour)', 'Rava (suji)', 'Poha', 'Maida', 'Vermicelli (semiya)', 'Bread'],
+    dals:   ['Toor dal', 'Moong dal', 'Chana dal', 'Masoor dal', 'Urad dal', 'Rajma', 'Kabuli chana (chickpeas)', 'Black chana'],
+    other:  ['Peanuts', 'Coconut', 'Tamarind', 'Jaggery', 'Cashews'],
+    base:   ['Salt', 'Cooking oil', 'Ghee', 'Sugar', 'Turmeric', 'Red chilli powder', 'Coriander powder', 'Cumin seeds', 'Mustard seeds', 'Garam masala', 'Hing (asafoetida)', 'Black pepper', 'Cardamom', 'Cloves', 'Cinnamon', 'Bay leaf', 'Tea leaves']
+  };
+  const KEY = 'fridge2table.v1';
+  const validCat = id => CATS.some(c => c.id === id);
+
+  function starter() {
+    const out = [];
+    CATS.forEach(c => (STARTER[c.id] || []).forEach(n => out.push({ n, c: c.id, on: true })));
+    return out;
+  }
+  function load() {
+    try {
+      const s = JSON.parse(localStorage.getItem(KEY));
+      if (s && Array.isArray(s.items)) {
+        return {
+          items: s.items
+            .filter(i => i && typeof i.n === 'string' && validCat(i.c))
+            .map(i => ({ n: i.n.slice(0, 60), c: i.c, on: !!i.on })),
+          prefs: s.prefs || {},
+          freshDate: s.freshDate || null
+        };
+      }
+    } catch (e) {}
+    return { items: starter(), prefs: {}, freshDate: null };
+  }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+
+  let state = load();
+  let editing = false;
+  const openCats = new Set(CATS.filter(c => c.open).map(c => c.id));
+
+  /* ---------- Kitchen screen ---------- */
+  function updateCount() {
+    const total = state.items.length, on = state.items.filter(i => i.on).length, off = total - on;
+    const text = 'Cooking with ' + on + ' of ' + total + ' items' + (off ? ' (' + off + ' marked finished)' : '');
+    $('count').textContent = text;
+    $('count2').textContent = text;
+    CATS.forEach(c => {
+      const el = document.querySelector('[data-count="' + c.id + '"]');
+      if (el) {
+        const l = state.items.filter(i => i.c === c.id);
+        el.textContent = l.filter(i => i.on).length + ' of ' + l.length;
+      }
+    });
+  }
+
+  function chipHtml(x) {
+    return '<button type="button" class="item ' + (x.it.on ? 'on' : 'off') + '" data-i="' + x.i + '"' +
+      (editing ? ' aria-label="Delete ' + esc(x.it.n) + '"' : ' aria-pressed="' + x.it.on + '"') + '>' + esc(x.it.n) + '</button>';
+  }
+
+  function updateFreshStatus() {
+    const n = state.items.filter(i => i.c === 'fresh').length;
+    const el = $('freshStatus');
+    let stale = false;
+    if (!n) {
+      el.textContent = 'No fresh items yet.';
+    } else {
+      let t = n + ' fresh item' + (n === 1 ? '' : 's') + '.';
+      const when = state.freshDate ? new Date(state.freshDate) : null;
+      if (when && !isNaN(when)) {
+        t += ' Last photo: ' + when.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+        const days = Math.floor((Date.now() - when.getTime()) / 86400000);
+        if (days >= 7) { t += ' (' + days + ' days ago). Take a new photo if you have shopped since.'; stale = true; }
+        else t += '.';
+      }
+      el.textContent = t;
+    }
+    el.classList.toggle('stale', stale);
+  }
+
+  function render() {
+    const entries = state.items.map((it, i) => ({ it, i }));
+    const fresh = entries.filter(x => x.it.c === 'fresh');
+    $('freshItems').classList.toggle('editing', editing);
+    $('freshItems').innerHTML = fresh.length
+      ? fresh.map(chipHtml).join('')
+      : '<span class="tip">No fresh items yet. Take a photo below.</span>';
+
+    const k = $('kitchen');
+    k.classList.toggle('editing', editing);
+    k.innerHTML = CATS.filter(c => c.id !== 'fresh').map(c => {
+      const list = entries.filter(x => x.it.c === c.id);
+      return '<details class="cat" data-c="' + c.id + '"' + (openCats.has(c.id) ? ' open' : '') + '>' +
+        '<summary><span>' + esc(c.name) + '</span><span class="n" data-count="' + c.id + '"></span></summary>' +
+        '<div class="items">' + (list.length
+          ? list.map(chipHtml).join('')
+          : '<span class="tip">Nothing here yet. Add items below.</span>') +
+        '</div></details>';
+    }).join('');
+    updateCount();
+    updateFreshStatus();
+  }
+
+  function onItemClick(e) {
+    const b = e.target.closest('.item');
+    if (!b) return;
+    const i = +b.dataset.i;
+    if (editing) { state.items.splice(i, 1); save(); render(); return; }
+    const it = state.items[i];
+    it.on = !it.on;
+    b.classList.toggle('on', it.on);
+    b.classList.toggle('off', !it.on);
+    b.setAttribute('aria-pressed', it.on);
+    save();
+    updateCount();
+  }
+  $('kitchen').addEventListener('click', onItemClick);
+  $('freshItems').addEventListener('click', onItemClick);
+  $('kitchen').addEventListener('toggle', e => {
+    const c = e.target.dataset && e.target.dataset.c;
+    if (!c) return;
+    if (e.target.open) openCats.add(c); else openCats.delete(c);
+  }, true);
+
+  $('restock').addEventListener('click', () => { state.items.forEach(i => { i.on = true; }); save(); render(); });
+  $('edit').addEventListener('click', () => {
+    editing = !editing;
+    $('edit').classList.toggle('on', editing);
+    $('edit').textContent = editing ? 'Done editing' : 'Edit list';
+    $('editTip').hidden = !editing;
+    render();
+  });
+  $('reset').addEventListener('click', () => {
+    if (confirm('Replace your list with the starter list? Items you added will be removed.')) {
+      state.items = starter(); state.freshDate = null; save(); render();
+    }
+  });
+
+  CATS.forEach(c => {
+    const o = document.createElement('option');
+    o.value = c.id; o.textContent = c.name;
+    $('addcat').appendChild(o);
+  });
+
+  function addToKitchen(names, cat) {
+    let changed = 0;
+    names.forEach(raw => {
+      const n = String(raw).replace(/\s+/g, ' ').trim().slice(0, 60);
+      if (!n) return;
+      const ex = state.items.find(x => x.n.toLowerCase() === n.toLowerCase());
+      if (ex) { if (!ex.on) { ex.on = true; changed++; } }
+      else { state.items.push({ n, c: cat, on: true }); changed++; }
+    });
+    openCats.add(cat);
+    save();
+    render();
+    return changed;
+  }
+  function addTyped() {
+    const names = $('extra').value.split(',').map(s => s.trim()).filter(Boolean);
+    if (names.length) addToKitchen(names, $('addcat').value);
+    $('extra').value = '';
+  }
+  $('add').addEventListener('click', addTyped);
+  $('extra').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addTyped(); } });
+
+  /* ---------- Saved choices (meal, calories, diet, cuisine, servings) ---------- */
+  const selected = name => { const el = document.querySelector('input[name=' + name + ']:checked'); return el ? el.value : ''; };
+  function savePrefs() {
+    state.prefs = { cal: selected('cal'), diet: selected('diet'), meal: selected('meal'), cuisine: selected('cuisine'), serv: $('serv').value };
+    save();
+  }
+  function loadPrefs() {
+    const p = state.prefs || {};
+    ['cal', 'diet', 'meal', 'cuisine'].forEach(name => {
+      if (p[name] == null) return;
+      const el = document.querySelector('input[name=' + name + '][value="' + p[name] + '"]');
+      if (el) el.checked = true;
+    });
+    if (p.serv) $('serv').value = p.serv;
+  }
+  document.addEventListener('change', e => {
+    if (e.target.matches('input[name=cal],input[name=diet],input[name=meal],input[name=cuisine],#serv')) savePrefs();
+  });
+
+  /* ---------- Talking to the server ---------- */
+  async function api(body) {
+    const res = await fetch('/api/recipes', { method: 'POST', body: JSON.stringify(body) });
+    if (res.status === 429) throw new Error('busy');
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    return JSON.parse(data.result);
+  }
+
+  function work(box, btn, labels, fn) {
+    let n = 0;
+    box.innerHTML = '<div class="loader"><div class="spinner"></div><p class="status">' + esc(labels[0]) + '</p></div>';
+    const st = box.querySelector('.status');
+    const t = setInterval(() => { n = Math.min(n + 1, labels.length - 1); st.textContent = labels[n]; }, 4000);
+    btn.disabled = true;
+    return fn().then(() => { box.innerHTML = ''; }).catch(e => {
+      const text = {
+        busy: 'The AI service is busy right now. Wait a minute and try again.',
+        none: 'No food found in that photo. Try a clearer one.'
+      }[e.message] || 'Something went wrong. Please try again.';
+      box.innerHTML = '<p class="status">' + text + '</p>' +
+        (e.message === 'none' ? '' : '<button class="btn alt" type="button">Try again</button>');
+      const r = box.querySelector('button');
+      if (r) r.addEventListener('click', () => work(box, btn, labels, fn));
+    }).finally(() => { clearInterval(t); btn.disabled = false; });
+  }
+
+  /* ---------- Photo: fresh items ---------- */
+  let photoData = null, found = [];
 
   function shrink(photo) {
     return new Promise(resolve => {
+      const url = URL.createObjectURL(photo);
       const img = new Image();
       img.onload = () => {
         const s = Math.min(1, 1024 / Math.max(img.width, img.height));
         const c = document.createElement('canvas');
-        c.width = img.width * s; c.height = img.height * s;
+        c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
         c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(url);
         resolve(c.toDataURL('image/jpeg', 0.8));
       };
-      img.src = URL.createObjectURL(photo);
+      img.onerror = () => { URL.revokeObjectURL(url); resolve(null); };
+      img.src = url;
     });
   }
-
-  const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-  const numbered = a => '<ol class="numbered">' + (a || []).map(i => '<li><span>' + esc(i) + '</span></li>').join('') + '</ol>';
 
   async function handlePhoto(input) {
     const f = input.files[0];
     input.value = '';
     if (!f) return;
+    $('foundBox').hidden = true;
+    $('photoMsg').innerHTML = '';
     photoData = await shrink(f);
-    preview.src = photoData;
-    preview.style.display = 'block';
-    go.hidden = false;
-    check.hidden = true;
-    out.innerHTML = '';
-    msg.innerHTML = '';
+    if (!photoData) {
+      $('preview').style.display = 'none';
+      $('go').hidden = true;
+      $('photoMsg').innerHTML = '<p class="status">That photo could not be read. Try a JPG or PNG.</p>';
+      return;
+    }
+    $('preview').src = photoData;
+    $('preview').style.display = 'block';
+    $('go').hidden = false;
   }
   $('camera').addEventListener('change', () => handlePhoto($('camera')));
   $('upload').addEventListener('change', () => handlePhoto($('upload')));
 
-  function drawList() {
-    $('list').innerHTML = items.map((n, i) =>
-      '<li><span>' + esc(n) + '</span><button class="del" data-i="' + i + '" aria-label="Remove ' + esc(n) + '">&times;</button></li>'
+  function drawFound() {
+    $('foundList').innerHTML = found.map((n, i) =>
+      '<li><span>' + esc(n) + '</span><button type="button" class="del" data-i="' + i + '" aria-label="Remove ' + esc(n) + '">&times;</button></li>'
     ).join('');
+    $('foundBox').hidden = !found.length;
   }
-  $('list').addEventListener('click', e => {
+  $('foundList').addEventListener('click', e => {
     const b = e.target.closest('.del');
     if (!b) return;
-    items.splice(+b.dataset.i, 1);
-    drawList();
+    found.splice(+b.dataset.i, 1);
+    drawFound();
   });
-  function addItems() {
-    $('extra').value.split(',').map(s => s.trim()).filter(Boolean).forEach(n => {
-      if (!items.some(x => x.toLowerCase() === n.toLowerCase())) items.push(n);
-    });
-    $('extra').value = '';
-    drawList();
-  }
-  $('add').addEventListener('click', addItems);
-  $('extra').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addItems(); } });
 
-  async function api(body) {
-  const res = await fetch('/api/recipes', { method: 'POST', body: JSON.stringify(body) });
-  if (res.status === 429) throw new Error('busy');
-  const data = await res.json();
-  if (data.error) throw new Error(data.error);
-  return JSON.parse(data.result);
-}
-
-  async function work(labels, fn) {
-    let n = 0;
-    msg.innerHTML = '<div class="loader"><div class="spinner"></div><p class="status" id="step">' + labels[0] + '</p></div>';
-    const t = setInterval(() => {
-      n = Math.min(n + 1, labels.length - 1);
-      const s = $('step'); if (s) s.textContent = labels[n];
-    }, 4000);
-    go.disabled = true; $('get').disabled = true;
-    try {
-      await fn();
-      msg.innerHTML = '';
-    } catch (e) {
-      const text = {
-        busy: 'The AI service is busy right now. Wait a minute and try again.',
-        none: 'No food found in that photo. Try a clearer one.'
-      }[e.message] || 'Something went wrong. Please try again.';
-      msg.innerHTML = '<p class="status">' + text + '</p>' +
-        (e.message === 'none' ? '' : '<button class="btn alt" id="retry">Try again</button>');
-      lastTry = () => work(labels, fn);
-    } finally {
-      clearInterval(t);
-      go.disabled = false; $('get').disabled = false;
-    }
-  }
-  msg.addEventListener('click', e => { if (e.target.id === 'retry' && lastTry) lastTry(); });
-
-  go.addEventListener('click', () => work(['Spotting ingredients...', 'Reading the photo...', 'Almost ready...'], async () => {
+  $('go').addEventListener('click', () => work($('photoMsg'), $('go'), ['Spotting ingredients...', 'Reading the photo...', 'Almost ready...'], async () => {
     const d = await api({ mode: 'detect', image: photoData.split(',')[1] });
-    items = d.ingredients || [];
-    if (!items.length) throw new Error('none');
-    out.innerHTML = '';
-    drawList();
-    check.hidden = false;
-    check.scrollIntoView({ behavior: 'smooth' });
+    found = (d.ingredients || []).filter(x => typeof x === 'string' && x.trim());
+    if (!found.length) throw new Error('none');
+    drawFound();
   }));
 
+  function applyFound(mode) {
+    if (!found.length) return;
+    if (mode === 'replace') state.items = state.items.filter(i => i.c !== 'fresh');
+    state.freshDate = new Date().toISOString();
+    const n = addToKitchen(found, 'fresh');
+    found = [];
+    $('foundBox').hidden = true;
+    $('preview').style.display = 'none';
+    $('go').hidden = true;
+    photoData = null;
+    const plural = n === 1 ? '' : 's';
+    const text = mode === 'replace'
+      ? 'Fresh list replaced with ' + n + ' item' + plural + '.'
+      : (n ? 'Added ' + n + ' item' + plural + ' to your fresh list.' : 'Those items were already on your fresh list.');
+    $('photoMsg').innerHTML = '<p class="status">' + text + '</p>';
+  }
+  $('replaceFound').addEventListener('click', () => applyFound('replace'));
+  $('addFound').addEventListener('click', () => applyFound('add'));
+  $('clearFresh').addEventListener('click', () => {
+    if (!state.items.some(i => i.c === 'fresh')) return;
+    if (confirm('Clear your whole fresh list?')) {
+      state.items = state.items.filter(i => i.c !== 'fresh');
+      state.freshDate = null;
+      save();
+      render();
+    }
+  });
+
+  /* ---------- Recipes ---------- */
   function card(r, max) {
     const c = Math.round(+r.calories || 0), p = Math.round(+r.protein || 0),
           cb = Math.round(+r.carbs || 0), f = Math.round(+r.fat || 0);
@@ -242,20 +510,28 @@
   }
 
   $('get').addEventListener('click', () => {
-    addItems();
-    if (!items.length) { msg.innerHTML = '<p class="status">Add at least one ingredient first.</p>'; return; }
-    const diet = document.querySelector('input[name=diet]:checked').value;
-    const maxCal = document.querySelector('input[name=cal]:checked').value;
+    addTyped();
+    const baseIds = CATS.filter(c => c.base).map(c => c.id);
+    const main = state.items.filter(i => i.on && !baseIds.includes(i.c)).map(i => i.n);
+    const pantry = state.items.filter(i => i.on && baseIds.includes(i.c)).map(i => i.n);
+    if (!main.length) { $('msg').innerHTML = '<p class="status">Mark at least one ingredient as available first.</p>'; return; }
+    savePrefs();
+    const diet = selected('diet'), maxCal = selected('cal'), meal = selected('meal'), cuisine = selected('cuisine') || 'Indian';
     const servings = Math.min(8, Math.max(1, +$('serv').value || 2));
-    work(['Thinking up dishes...', 'Counting calories...', 'Writing the recipes...', 'Almost ready...'], async () => {
-      const d = await api({ mode: 'recipes', ingredients: items, diet, maxCal, servings });
+    work($('msg'), $('get'), ['Thinking up dishes...', 'Counting calories...', 'Writing the recipes...', 'Almost ready...'], async () => {
+      const d = await api({ mode: 'recipes', ingredients: main, pantry, diet, maxCal, servings, meal, cuisine });
       const list = (d.recipes || []).sort((a, b) => (+a.calories || 0) - (+b.calories || 0));
-      out.innerHTML = '<h2>Recipes for you</h2><p class="tip">Lowest calories first. All figures are per serving.</p>' +
+      if (!list.length) throw new Error('empty');
+      $('out').innerHTML = '<h2>Recipes for you</h2><p class="tip">Lowest calories first. All figures are per serving.</p>' +
         list.map(r => card(r, +maxCal || 0)).join('') +
         '<p class="tip">Calories and nutrients are AI estimates and can be well off. This is not medical or dietary advice.</p>';
-      out.scrollIntoView({ behavior: 'smooth' });
+      $('out').scrollIntoView({ behavior: 'smooth' });
     });
   });
+
+  /* ---------- Start ---------- */
+  loadPrefs();
+  render();
 </script>
 </body>
 </html>
