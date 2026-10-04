@@ -177,11 +177,12 @@
   $('extra').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addItems(); } });
 
   async function api(body) {
-    const res = await fetch('/api/recipes', { method: 'POST', body: JSON.stringify(body) });
-    const data = await res.json();
-    if (data.error) throw new Error(data.error);
-    return JSON.parse(data.result);
-  }
+  const res = await fetch('/api/recipes', { method: 'POST', body: JSON.stringify(body) });
+  if (res.status === 429) throw new Error('busy');
+  const data = await res.json();
+  if (data.error) throw new Error(data.error);
+  return JSON.parse(data.result);
+}
 
   async function work(labels, fn) {
     let n = 0;
